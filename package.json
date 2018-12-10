@@ -1,0 +1,26 @@
+{
+  "name": "terraform-plan-applier",
+  "version": "0.1.0",
+  "description": "Uses terraform-plan-parser to convert plan into json. Then reads from a yaml file to look for acceptable changes. If a specific target has all acceptable changes listed for it, then it will run `terraform apply` with only that specific target as well as other targets that meet the criteria.",
+  "main": "./src/",
+  "bin": {
+    "terraform-plan-applier": "./src/cli.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint src/*.js --fix"
+  },
+  "dependencies": {
+    "colors": "1.3.2",
+    "commander": "^2.19.0",
+    "js-yaml": "^3.12.0",
+    "terraform-plan-parser": "^1.5.0"
+  },
+  "devDependencies": {
+    "eslint": "5.10.0",
+    "eslint-config-airbnb-base": "13.1.0",
+    "eslint-plugin-import": "2.14.0"
+  },
+  "author": "nc",
+  "license": "AGPLv3"
+}

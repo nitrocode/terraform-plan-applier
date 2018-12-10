@@ -1,0 +1,36 @@
+---
+# this is used in both blue.lc and green.lc
+asgAttributes: &asgAttributes
+# matches the number of subnets inc from 3 to 4
+- name: 'vpc_zone_identifier\.#'
+  old: 3
+  new: 4
+# w/e the vpc zone ID is at the end, it should go from blank
+# to the subnet below which is an addition
+- name: 'vpc_zone_identifier\.[\d]+'
+  old: ''
+  new: subnet-ac7b95a3|subnet-d74eeda1
+
+changedResources:
+# - path: 'module\..*\.module\.service\.module\.elb\.aws_elb\..*'
+#   attributes:
+
+- path: 'module\..*\.module\.service\.module\.blue\.aws_autoscaling_group\..*'
+  id: blue.asg
+  attributes: *asgAttributes
+  action: update
+- path: 'module\..*\.module\.service\.module\.blue\.aws_launch_configuration\..*'
+  id: blue.lc
+  attributes:
+    - name: image_id
+      new: ami-02e806e34d2d38ff1
+- path: 'module\..*\.module\.service\.module\.green\.aws_autoscaling_group\..*'
+  id: green.asg
+  attributes: *asgAttributes
+- path: 'module\..*\.module\.service\.module\.green\.aws_launch_configuration\..*'
+  id: green.lc
+  attributes:
+    - name: image_id
+      new: ami-0d7cf845f167feb29
+- path: 'module\..*\.module\.service\.module\.blue|green\.aws_autoscaling_lifecycle_hook\.scaleup_lifecycle_hook'
+...
