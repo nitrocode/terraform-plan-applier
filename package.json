@@ -1,6 +1,7 @@
 {
   "name": "terraform-plan-applier",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "url": "https://github.com/nitrocode/terraform-plan-applier",
   "description": "Uses terraform-plan-parser to convert plan into json. Then reads from a yaml file to look for acceptable changes. If a specific target has all acceptable changes listed for it, then it will run `terraform apply` with only that specific target as well as other targets that meet the criteria.",
   "main": "./src/",
   "bin": {
