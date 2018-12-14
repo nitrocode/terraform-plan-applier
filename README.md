@@ -1,6 +1,6 @@
 # terraform-plan-applier
 
-Uses terraform-plan-parser to convert plan into json. Then reads from a yaml file to look for acceptable changes. If a specific target has all acceptable changes listed for it, then it will run `terraform apply` with only that specific target as well as other targets that meet the criteria.
+Uses [terraform-plan-parser](https://github.com/lifeomic/terraform-plan-parser) to convert plan into json. Then reads from a yaml file to look for acceptable changes. If a specific target has all acceptable changes listed for it, then it will run `terraform apply` with only that specific target as well as other targets that meet the criteria.
 
 ## Setup
 
@@ -27,6 +27,10 @@ Run command
     terraform init
     terraform plan | terraform-plan-applier -a apply.yml
 
+## Contribute
+
+If you have time, please contribute! Standard fork, branch, PR model.
+
 ## TODO
 
 ### High
@@ -42,9 +46,11 @@ Run command
   * [ ] option for verbosity to show why certain items did not get approved
 * [x] run `terraform plan / apply` commands on targets
 * [x] package into installable cli app
-  * [ ] installable via npm
+  * [x] installable via npm
 * [ ] ensure that targets do not include other targets when planning
   * terraform plan first with the found targets and make sure the returned targets match. if not, do not -auto-approve
+* [ ] option to apply everything (without targets) if validation is good
+* [ ] option to `-auto-approve`
 
 ### Low
 
