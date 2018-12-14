@@ -5,7 +5,18 @@
     "type": "git",
     "url": "https://github.com/nitrocode/terraform-plan-applier",
   },
+  "bugs": {
+    "url": "https://github.com/nitrocode/terraform-plan-applier/issues"
+  },
+  "homepage": "https://github.com/nitrocode/terraform-plan-applier",
   "description": "Uses terraform-plan-parser to convert plan into json. Then reads from a yaml file to look for acceptable changes. If a specific target has all acceptable changes listed for it, then it will run `terraform apply` with only that specific target as well as other targets that meet the criteria.",
+  "keywords": [
+    "terraform",
+    "terraform-plan",
+    "terraform-apply",
+    "terraform-applier",
+    "terraform-parser"
+  ],
   "main": "./src/",
   "bin": {
     "terraform-plan-applier": "./src/cli.js"
