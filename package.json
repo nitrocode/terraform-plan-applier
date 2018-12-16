@@ -3,7 +3,7 @@
   "version": "0.1.2",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nitrocode/terraform-plan-applier",
+    "url": "https://github.com/nitrocode/terraform-plan-applier"
   },
   "bugs": {
     "url": "https://github.com/nitrocode/terraform-plan-applier/issues"
