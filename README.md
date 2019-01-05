@@ -22,9 +22,27 @@ changedResources:
       new: subnet-ac7b95a3|subnet-d74eeda1
 ```
 
-Please see the help documentation
+```
+$ terraform-plan-applier -h
+Usage: terraform-plan-applier [options]
 
-    terraform-plan-applier -h
+Options:
+  -V, --version        output the version number
+  -c, --config <file>  required config criteria yaml to apply
+  -p, --plan [file]    optional output of `terraform plan` which can be piped in
+  --apply              Executes `terraform apply -auto-approve` if criteria is matched
+  -v, --verbose        verbose mode
+  -h, --help           output usage information
+
+Dry Run Examples:
+  $ terraform plan | terraform-plan-apply -c apply.yml
+  $ cat terraform-plan.stdout | terraform-plan-apply -c apply.yml
+  $ AWS_PROFILE=dev terraform-plan-apply -c apply.yml < terraform-plan.stdout
+
+Apply Examples:
+  $ terraform-plan-apply --config apply.yml --apply < terraform-plan.stdout
+  $ AWS_PROFILE=dev terraform-plan-apply --config apply.yml --apply < terraform-plan.stdout
+```
 
 ## Contribute
 
