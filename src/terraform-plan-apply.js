@@ -2,10 +2,8 @@
 const fs = require('fs');
 // parse terraform plan to json
 const parser = require('terraform-plan-parser');
-// parse yaml to json
-const { safeLoad } = require('js-yaml');
-// for pretty stuff
-const colors = require('colors');
+// custom logger
+const createLogger = require('./logger');
 // promisify exec command
 // source: https://stackoverflow.com/a/20643568
 const util = require('util');
@@ -38,12 +36,13 @@ function validateAttributeValues(validAttrib, planAttrib) {
 /**
  * Get the target resources that are approved using the apply yaml
  *
- * @param {object} plan json object from terraform plan
+ * @param {object} stdin input plan to parse into json object
  * @param {object} apply yaml object
  * @returns {string[]} targets
  */
 function getTargets(plan, apply) {
   // go through all the planned resources that will change
+  logger.msg(`Filtering ${plan.changedResources.length} potential changedResources...`);
   return plan.changedResources
     .filter(planResource => apply.changedResources.some((validResource) => {
       // if plan resource name matches the validation resource regex
@@ -55,13 +54,22 @@ function getTargets(plan, apply) {
           const planAttrib = planResource.changedAttributes[planAttribKey];
           if ('attributes' in validResource) {
             for (const validAttrib of validResource.attributes) {
-              // if the plan attribute has a validation and
-              //    a change in values and
-              //    NOT validated values
+              // if the plan attribute is the same as the validation attrib iteration and
               //    then do an early return
               if ((planAttribKey.match(validAttrib.name))
+                  // and there is a change in values and
                   && (planAttrib.old.value !== planAttrib.new.value)
+                  // and values are NOT validated
                   && (!validateAttributeValues(validAttrib, planAttrib))) {
+                logger.info('This target was rejected for one of these reasons.');
+                logger.info(`1) ${planAttribKey} == ${validAttrib.name} which is ${planAttribKey.match(validAttrib.name)}`);
+                logger.info(`2) ${planAttrib.old.value} != ${planAttrib.new.value} which is ${planAttrib.old.value !== planAttrib.new.value}`);
+                logger.info(`3) ${planAttrib.new.value} != ${validAttrib.new} which is ${planAttrib.new.value.match(validAttrib.new)}`);
+                if ('old' in validAttrib) {
+                  // compare old and new
+                  logger.info(`4) ${planAttrib.old.value} != ${validAttrib.old} which is ${planAttrib.old.value.match(validAttrib.old)}`);
+                }
+                // then throw it out!
                 return false;
               }
             }
@@ -70,6 +78,7 @@ function getTargets(plan, apply) {
           }
         }
         // if all the validation for this target did not fail, then return true
+        logger.info('This target was accepted.');
         return true;
       }
       return false;
@@ -77,91 +86,98 @@ function getTargets(plan, apply) {
 }
 
 /**
- * Read the yaml file safely and destructure it into an object
- *
- * @param {string} filePath path to yaml file
- * @returns {object} yaml object
- */
-function readYaml(filePath) {
-  let apply;
-  try {
-    apply = safeLoad(fs.readFileSync(filePath, 'utf8'));
-  } catch (e) {
-    logger.error(e);
-  }
-  return apply;
-}
-
-/**
  * Create the terraform apply command with the targets
  *
  * @param {array} targets
- * @returns {string} terraform command
+ * @returns {string} partial terraform command for targets
  */
 function getCommand(targets) {
   // print out paths of approved targets
   const paths = targets.map(target => `-target ${target.path}`).join(' ');
 
-  // return `terraform apply -auto-approve \\ \n${paths}`;
   return paths;
+}
+
+/**
+ * Execute terraform code with catches to log the error
+ *
+ * @param {string} cmd terraform command
+ */
+function terraformExec(cmd) {
+  return exec(cmd)
+    .catch((e) => {
+      logger.error(e.stdout);
+      logger.error(e.stderr);
+      logger.error(`Please run this manually\n\n\t${cmd}`);
+    });
 }
 
 /**
  * Main function to parse the plan, apply the criteria, and run the command
  *
  * @param {string} stdin terraform plan output
- * @returns {object} output of command
+ * @param {object} config parsed yaml config
+ * @param {boolean} apply if terraform apply should run
+ * @param {boolean} verbose verbosity for logger
+ * @returns {boolean} true if it was or was to be applied
  */
-async function main(stdin, program) {
-  logger = {
-    info: (msg) => {
-      // only print if verbose is enabled
-      if ('verbose' in program && program.verbose) {
-        console.info(msg);
-      }
-    },
-    error: (msg) => {
-      console.error(colors.red(msg));
-    },
-  };
+async function applier(stdin, config, apply, verbose) {
+  // create the logger
+  logger = createLogger(verbose);
 
-  // check for apply option, if not, show error, help output, and exit
-  if (!program.apply) {
-    logger.error('No apply file given!\n');
-    program.outputHelp();
-    process.exit(1);
-  }
+  // print out current plan
+  console.log(stdin);
 
   // use terraform-plan-parser to parse the plan
   const plan = parser.parseStdout(stdin);
 
-  // read yaml config
-  const apply = readYaml(program.apply);
-  if (!apply) process.exit(1);
-
-  // go through all the changed resources
-  const targets = getTargets(plan, apply);
+  // go through all the changed resources to get the targets
+  // const targets = getTargets(plan, config);
+  const targets = getTargets(plan, config);
+  // early return if no targets were found because there's nothing to apply
+  if (targets === undefined || targets.length == 0) {
+    logger.msg('No changes to apply or nothing matched.')
+    return;
+  }
 
   // print out paths of approved targets
   const cmdTargets = getCommand(targets);
 
-  logger.info(cmdTargets);
+  logger.info(`\nMATCHING TARGETS\n\t${cmdTargets}\n`);
 
-  if (!('dryRun' in program)) {
-    return exec(`terraform plan ${cmdTargets}`)
-      .then((output) => {
-        // TODO: check if output contains the same targets that matched
-        // if it's the same targets, run apply -auto-approve
-        logger.info(output.stdout);
-      })
-      .catch((e) => {
-        // console.error(e);
-        logger.error(e.stdout);
-        logger.error(e.stderr);
-        logger.error(`Please run this manually\n\n  ${cmd}`);
-      });
-  }
-  return null;
+  let cmd = `terraform plan ${cmdTargets}`;
+  logger.msg(`Rerunning plan with matching targets (${targets.length}) to confirm targets...`);
+  logger.msg(`\n\t$ ${cmd}\n`);
+  return terraformExec(cmd)
+    .then(async (output) => {
+      console.log(output.stdout);
+      // check if the targets are the same
+      targetsCheck = getTargets(parser.parseStdout(output.stdout), config);
+      cmdTargetsCheck = getCommand(targetsCheck);
+      // if matching targets before and after targetted plan
+      if (cmdTargets === cmdTargetsCheck) {
+        // print command
+        logger.msg(`The same ${targetsCheck.length} targets confirmed in the targetted plan.`);
+        cmd = `terraform apply ${cmdTargets}`;
+        cmd = `${cmd} -auto-approve`;
+        logger.msg(`Running terraform apply -auto-approve with matching targets...`);
+        logger.msg(`\n\t$ ${cmd}\n`);
+        // only apply and auto approve if option has been set
+        // if ('apply' in program) {
+        if (apply) {
+          return terraformExec(cmd)
+            .then((output) => {
+              console.log(output.stdout);
+              return true;
+            })
+        } else {
+          logger.error('--apply was omitted so skipping apply.');
+          return true;
+        }
+      } else {
+        throw new Error(`Targets did not match!\n\t${cmdTargets}\n\t${cmdTargetsCheck}`);
+      }
+    });
 }
 
-module.exports = main;
+module.exports = applier;

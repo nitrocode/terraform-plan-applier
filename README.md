@@ -15,17 +15,16 @@ The following will allow an asg named blue for any service to have an additional
 ```
 changedResources:
 - path: 'module\..*\.module\.service\.module\.blue\.aws_autoscaling_group\..*'
-  attributes: 
+  attributes:
     # allow only if vpc_zone_identifier is added one of 2 subnets
     - name: 'vpc_zone_identifier\.[\d]+'
       old: ''
       new: subnet-ac7b95a3|subnet-d74eeda1
 ```
 
-Run command
+Please see the help documentation
 
-    terraform init
-    terraform plan | terraform-plan-applier -a apply.yml
+    terraform-plan-applier -h
 
 ## Contribute
 
@@ -43,18 +42,18 @@ If you have time, please contribute! Standard fork, branch, PR model.
   * [x] required argument to read from the apply file
   * [x] help info with examples
   * [x] option for dryrun where it shows the cmd but doesnt run it
-  * [ ] option for verbosity to show why certain items did not get approved
+  * [x] option for verbosity
 * [x] run `terraform plan / apply` commands on targets
 * [x] package into installable cli app
   * [x] installable via npm
-* [ ] ensure that targets do not include other targets when planning
-  * terraform plan first with the found targets and make sure the returned targets match. if not, do not -auto-approve
-* [ ] option to apply everything (without targets) if validation is good
-* [ ] option to `-auto-approve`
+* [x] ensure that targets do not include other targets when planning
+  * terraform plan first with the found targets and make sure the returned targets match. if not, do not apply.
+* [x] option to `-auto-approve` by using `--apply`
 
 ### Low
 
 * [ ] allow action to be set e.g. update, replace, destroy
+  * also account for plan numbers like `Plan: 2 to add, 2 to change, 2 to destroy.` for more precise matching. If this fails, do not continue.
 * [ ] investigate support for module / type attribute searching
   * how much more value does this bring?
-* [ ] support json file type in addition to yaml for apply criteria
+* [ ] support json file type in addition to yaml for config criteria
