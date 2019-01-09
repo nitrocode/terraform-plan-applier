@@ -58,7 +58,7 @@ function getTargets(plan, apply) {
               //    then do an early return
               if ((planAttribKey.match(validAttrib.name))
                   // and there is a change in values and
-                  && (planAttrib.old.value !== planAttrib.new.value)
+                  && ('old' in planAttrib && planAttrib.old.value !== planAttrib.new.value)
                   // and values are NOT validated
                   && (!validateAttributeValues(validAttrib, planAttrib))) {
                 logger.info('This target was rejected for one of these reasons.');
@@ -74,7 +74,7 @@ function getTargets(plan, apply) {
               }
             }
           } else {
-            logger.log('no attributes');
+            logger.info('no attributes');
           }
         }
         // if all the validation for this target did not fail, then return true
@@ -149,7 +149,7 @@ async function applier(stdin, config, apply, verbose) {
   logger.msg(`Rerunning plan with matching targets (${targets.length}) to confirm targets...`);
   logger.msg(`\n\t$ ${cmd}\n`);
   return terraformExec(cmd)
-    .then(async (output) => {
+    .then((output) => {
       console.log(output.stdout);
       // check if the targets are the same
       targetsCheck = getTargets(parser.parseStdout(output.stdout), config);
@@ -163,7 +163,6 @@ async function applier(stdin, config, apply, verbose) {
         logger.msg(`Running terraform apply -auto-approve with matching targets...`);
         logger.msg(`\n\t$ ${cmd}\n`);
         // only apply and auto approve if option has been set
-        // if ('apply' in program) {
         if (apply) {
           return terraformExec(cmd)
             .then((output) => {

@@ -13,17 +13,6 @@ const createLogger = require('./logger');
 const applier = require('./terraform-plan-apply');
 
 /**
- * Wrapper around terraform-plan-apply with a catch statement
- *
- * @param {string} stdin standard input
- * @param {object} program commander parsed object
- */
-function apply(stdin, program) {
-  return applier(stdin, program)
-    .catch(console.error);
-}
-
-/**
  * Read the yaml file safely and destructure it into an object
  *
  * @param {string} filePath path to yaml file
@@ -91,10 +80,12 @@ if (!program.plan) {
   });
   // once stdin is finished, call main
   process.stdin.on('end', () => {
-    apply(stdin, configFile, applyOption, verbose);
+    applier(stdin, configFile, applyOption, verbose)
+      .catch(console.error);
   });
 } else {
   // read the plan file
   const stdin = fs.readFileSync(program.plan, { encoding: 'utf8' });
-  apply(stdin, configFile, applyOption, verbose);
+  applier(stdin, configFile, applyOption, verbose)
+    .catch(console.error);
 }
