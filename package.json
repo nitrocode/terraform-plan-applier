@@ -29,7 +29,7 @@
   "dependencies": {
     "colors": "1.3.2",
     "commander": "^2.19.0",
-    "js-yaml": "^3.12.0",
+    "js-yaml": "^3.13.1",
     "terraform-plan-parser": "^1.5.0"
   },
   "devDependencies": {
